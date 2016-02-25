@@ -1,0 +1,157 @@
+# dBroadcasting system
+# Allows for colorized broadcasts
+# Users require op or dbroadcast.command permission
+# Broadcasts are stored in dBroadcasts_saves.yml and is 
+# Editable and reloadable.
+# Created by Talamar1 @ mc.Alphinia.info
+
+Broadcast:
+  type: world
+  debug: false
+  events:
+    on server start:
+    - if <server.has_file[dbroadcast_saves.yml]> { 
+      - announce "<red><&lb>dBroadcast<&rb> <green>Loading Broadcast Config File"
+      - yaml load:dbroadcast_saves.yml id:dbroadcast_saves
+      }
+      else { 
+      - announce "<red><&lb>dBroadcast<&rb> <green>Creating Broadcast Config File"
+      - yaml create id:dbroadcast_saves
+      - yaml savefile:dbroadcast_saves.yml id:dbroadcast_saves
+      } 
+    - run InitdBroadcast delay:10t
+
+    on dbc command:
+    - determine passively fulfilled
+    - if !<context.server> && !<player.has_permission[dbroadcast.command]> {
+      - narrate "<&6>You do not have permission to use the dbroadcast command."
+      - queue clear
+      }
+    - if <el@val[add].is[==].to[<context.args.get[1]>]> {
+      - inject dbroadcast_command_add
+      }
+      else if <context.args.get[1].matches[^(rem|remove|del|delete)$]> {
+      - inject dbroadcast_command_remove
+      }
+      else if <el@val[list].is[==].to[<context.args.get[1]>]>  {
+      - inject dbroadcast_command_list
+      }
+      else if <el@val[reload].is[==].to[<context.args.get[1]>]>  {
+      - inject dbroadcast_command_reload
+      }
+      else {
+      - narrate "<&6>/dBc add <&lt>timer<&gt> <&lt>message<&gt>"
+      - narrate "<&6>/dBc remove <&lt>dbid<&gt>"
+      - narrate "<&6>/dBc list"
+      - narrate "<&6>/dBc reload"
+      }
+InitdBroadcast:
+  type: task
+  debug: false
+  script:
+    - while true {
+      - define broadcasts <yaml[dbroadcast_saves].list_keys[bclist]||li@>
+      - if <def[broadcasts].size> > 0 {
+        - foreach %broadcasts% {
+          - if <util.date.time.minute.mod[<yaml[dbroadcast_saves].read[bclist.%value%.timer]>].is[==].to[0]> {
+            - announce "<yaml[dbroadcast_saves].read[bclist.%value%.message]>"
+            }
+          }
+        }
+      - wait 1m
+      }
+
+dbroadcast_command_add:
+  type: task
+  debug: false
+  script:
+    - if <context.args.get[3].is[==].to[null]||true> {
+      - narrate "<&6>/dBc add <&lt>timer<&gt> <&lt>message<&gt>"
+      - narrate "<&6>Timer - Amount of time between rebroadcasts"
+      - narrate "<&6>Message - message you want broadcasts"
+      - queue clear
+      }
+    - if <context.args.get[2].as_int.is[LESS].than[5]||true> {
+      - narrate "<gold>dBroadcast Invalid time argument"
+      - narrate "<gold>Value must be greater than 5"
+      - queue clear
+      }
+    - define dBtimer <context.args.get[2].as_int>
+    - define dBmsg <context.args.get[3].to[<context.args.size>].as_string>
+    - define dBmsg <def[dBmsg].replace[&0].with[<&0>]>
+    - define dBmsg <def[dBmsg].replace[&1].with[<&1>]>
+    - define dBmsg <def[dBmsg].replace[&2].with[<&2>]>
+    - define dBmsg <def[dBmsg].replace[&3].with[<&3>]>
+    - define dBmsg <def[dBmsg].replace[&4].with[<&4>]>
+    - define dBmsg <def[dBmsg].replace[&5].with[<&5>]>
+    - define dBmsg <def[dBmsg].replace[&6].with[<&6>]>
+    - define dBmsg <def[dBmsg].replace[&7].with[<&7>]>
+    - define dBmsg <def[dBmsg].replace[&8].with[<&8>]>
+    - define dBmsg <def[dBmsg].replace[&9].with[<&9>]>
+    - define dBmsg <def[dBmsg].replace[&a].with[<&a>]>
+    - define dBmsg <def[dBmsg].replace[&b].with[<&b>]>
+    - define dBmsg <def[dBmsg].replace[&c].with[<&c>]>
+    - define dBmsg <def[dBmsg].replace[&d].with[<&d>]>
+    - define dBmsg <def[dBmsg].replace[&e].with[<&e>]>
+    - define dBmsg <def[dBmsg].replace[&f].with[<&f>]>
+    - define dBmsg <def[dBmsg].replace[&k].with[<&k>]>
+    - define dBmsg <def[dBmsg].replace[&l].with[<&l>]>
+    - define dBmsg <def[dBmsg].replace[&m].with[<&m>]>
+    - define dBmsg <def[dBmsg].replace[&n].with[<&n>]>
+    - define dBmsg <def[dBmsg].replace[&o].with[<&o>]>
+    - define dBmsg <def[dBmsg].replace[&r].with[<&r>]>
+    - narrate "Timer %dBtimer%"
+    - narrate "Message %dBmsg%"
+    - define bcount <yaml[dbroadcast_saves].list_keys[bclist].size||0>
+    - yaml set bclist.<def[bcount].add[1].as_int>.timer:%dBtimer% id:dbroadcast_saves
+    - yaml set bclist.<def[bcount].add[1].as_int>.message:%dBmsg% id:dbroadcast_saves
+    - yaml savefile:dbroadcast_saves.yml id:dbroadcast_saves
+
+dbroadcast_command_list:
+  type: task
+  debug: false
+  script:
+    - if <yaml[dbroadcast_saves].list_keys[bclist].size.is[more].than[0]||null> == true {
+      - foreach <yaml[dbroadcast_saves].list_keys[bclist]> {
+        - narrate "Key<&co> %value% <&co> <yaml[dbroadcast_saves].read[bclist.%value%.timer]> <&co> <yaml[dbroadcast_saves].read[bclist.%value%.message]> "
+      }
+    }
+
+dbroadcast_command_reload:
+  type: task
+  debug: false
+  script:
+    - if <server.has_file[dbroadcast_saves.yml]> { 
+      - narrate "<red><&lb>dBroadcast<&rb> <green>Loading Broadcast Config File"
+      - yaml load:dbroadcast_saves.yml id:dbroadcast_saves
+      }
+      else { 
+      - narrate "<red><&lb>dBroadcast<&rb> <green>Creating Broadcast Config File"
+      - yaml create id:dbroadcast_saves
+      - yaml savefile:dbroadcast_saves.yml id:dbroadcast_saves
+      } 
+
+dbroadcast_command_remove:
+  type: task
+  debug: true
+  script:
+    - define bcid <context.args.get[2].as_int>
+    - if <def[bcid].is[LESS].than[1]||false> || <yaml[dbroadcast_saves].contains[bclist.%bcid%].not> {
+      - narrate "<gold>dBroadcast Invalid broadcast id number"
+      - narrate "<gold>Check IDs with /bc list"
+      - queue clear
+      }
+    - yaml set bclist.%bcid%:! id:dbroadcast_saves
+    - yaml create id:temp_broadcast
+    - if <yaml[dbroadcast_saves].list_keys[bclist].size||0> != 1 {
+      - yaml savefile:dbroadcast_saves.yml id:dbroadcast_saves
+      }
+      else {
+      - foreach <yaml[dbroadcast_saves].list_keys[bclist]> {
+        - yaml set bclist.%loop_index%.timer:<yaml[dbroadcast_saves].read[bclist.%value%.timer]> id:temp_broadcast
+        - yaml set bclist.%loop_index%.message:<yaml[dbroadcast_saves].read[bclist.%value%.message]> id:temp_broadcast
+        }
+      - yaml savefile:dbroadcast_saves.yml id:temp_broadcast
+      - yaml unload id:temp_broadcast
+      }
+    - inject dbroadcast_command_reload
